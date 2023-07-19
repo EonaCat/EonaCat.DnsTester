@@ -43,9 +43,7 @@ namespace EonaCat.DnsTester
                 return;
             }
 
-            var urls = new List<string>();
             SetupView();
-
 
             var numThreads = (int)numericUpDown2.Value; // number of concurrent threads to use
             var maxUrls = (int)numericUpDown1.Value; // maximum number of unique URLs to retrieve
@@ -57,12 +55,14 @@ namespace EonaCat.DnsTester
             }
 
             SetSearchEngines();
-            urls = await UrlHelper.RetrieveUrlsAsync(numThreads, numUrlsPerThread).ConfigureAwait(false);
+            var urls = await UrlHelper.RetrieveUrlsAsync(numThreads, numUrlsPerThread).ConfigureAwait(false);
             AddUrlToView(urls);
 
             IsRunning = true;
+            RunTest.Invoke(() => { RunTest.Enabled = false; });
             await ProcessAsync(_recordType, urls.ToArray(), _dnsServer1, _dnsServer2).ConfigureAwait(false);
             IsRunning = false;
+            RunTest.Invoke(() => { RunTest.Enabled = true; });
         }
 
         private void SetSearchEngines()

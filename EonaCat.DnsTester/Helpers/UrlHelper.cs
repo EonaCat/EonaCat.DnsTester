@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -12,6 +13,7 @@ namespace EonaCat.DnsTester.Helpers
     {
         private static readonly RandomNumberGenerator RandomNumberGenerator = RandomNumberGenerator.Create();
         public static event EventHandler<string> Log;
+
         public static bool UseSearchEngineYahoo { get; set; }
         public static bool UseSearchEngineBing { get; set; }
         public static bool UseSearchEngineGoogle { get; set; }
@@ -20,83 +22,71 @@ namespace EonaCat.DnsTester.Helpers
         public static bool UseSearchEngineStartPage { get; set; }
         public static bool UseSearchEngineYandex { get; set; }
 
-        private static async Task<List<string>> GetRandomUrlsAsync(int totalUrls)
-        {
-            var letters = GetRandomLetters();
-            var searchEngineUrls = GetSearchEngines();
-            var rand = new Random();
-            var urls = new List<string>();
 
-            while (urls.Count < totalUrls)
+    private static async Task<List<string>> GetRandomUrlsAsync(int totalUrls)
+    {
+        var urls = new ConcurrentDictionary<string, byte>();
+        var letters = GetRandomLetters();
+        var searchEngineUrls = GetSearchEngines().ToList();
+        var random = new Random();
+
+        while (urls.Count < totalUrls && searchEngineUrls.Count > 0)
+        {
+            await Task.Run(async () =>
             {
-                var index = rand.Next(searchEngineUrls.Count);
-                var searchEngine = searchEngineUrls.ElementAt(index);
+                var index = random.Next(searchEngineUrls.Count);
+                var searchEngine = searchEngineUrls[index];
                 var url = searchEngine.Value + letters;
 
-                using (var httpClient = new HttpClient())
+                try
                 {
-                    try
+                    var httpClient = new HttpClient();
+                    var response = await httpClient.GetAsync(url).ConfigureAwait(false);
+
+                    if (response.IsSuccessStatusCode)
                     {
-                        var response = await httpClient.GetAsync(url).ConfigureAwait(false);
+                        var responseString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                        var hostNames = Regex.Matches(responseString, @"[.](\w+[.]com)");
 
-                        if (response.IsSuccessStatusCode)
+                        foreach (Match match in hostNames)
                         {
-                            var responseString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var name = match.Groups[1].Value;
+                            if (name == $"{searchEngine.Key.ToLower()}.com") continue;
 
-                            // find all .xxx.com addresses
-                            var hostNames = Regex.Matches(responseString, @"[.](\w+[.]com)");
-
-                            // Loop through the match collection to retrieve all matches and delete the leading "."
-                            var uniqueNames = new HashSet<string>();
-                            foreach (Match match in hostNames)
+                            urls.TryAdd(name, 0); // TryAdd is thread-safe
+                            if (urls.Count >= totalUrls)
                             {
-                                var name = match.Groups[1].Value;
-                                if (name != $"{searchEngine.Key.ToLower()}.com")
-                                {
-                                    uniqueNames.Add(name);
-                                }
-                            }
-
-                            // Add the names to the list
-                            foreach (var name in uniqueNames)
-                            {
-                                if (urls.Count >= totalUrls)
-                                {
-                                    break;
-                                }
-
-                                if (!urls.Contains(name))
-                                {
-                                    urls.Add(name);
-                                }
+                                break;
                             }
                         }
-                        else
-                        {
-                            // Handle non-successful status codes (optional)
-                            searchEngineUrls.Remove(searchEngine.Key);
-                            SetStatus($"{searchEngine.Key}: {response.StatusCode}");
-                        }
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        // Handle exceptions (optional)
-                        searchEngineUrls.Remove(searchEngine.Key);
-                        SetStatus($"{searchEngine.Key}: {ex.Message}");
+                        searchEngineUrls.RemoveAt(index);
+                        SetStatus($"{searchEngine.Key}: {response.StatusCode}");
                     }
+
+                    httpClient.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    searchEngineUrls.RemoveAt(index);
+                    SetStatus($"{searchEngine.Key}: {ex.Message}");
                 }
 
                 letters = GetRandomLetters();
                 await Task.Delay(100).ConfigureAwait(false);
-            }
-
-            var urlText = "url" + (urls.Count > 1 ? "'s" : string.Empty);
-            SetStatus($"{urls.Count} random {urlText} found");
-            return urls;
+            }).ConfigureAwait(false);
         }
 
+        var urlText = "url" + (urls.Count > 1 ? "'s" : string.Empty);
+        SetStatus($"{urls.Count} random {urlText} found");
+        return urls.Keys.ToList();
+    }
 
-        private static Dictionary<string, string> GetSearchEngines()
+
+
+    private static Dictionary<string, string> GetSearchEngines()
         {
             var searchEngineUrls = new Dictionary<string, string>();
             if (UseSearchEngineYahoo)
@@ -139,21 +129,23 @@ namespace EonaCat.DnsTester.Helpers
 
         public static async Task<List<string>> RetrieveUrlsAsync(int numThreads, int numUrlsPerThread)
         {
-            var tasks = new Task[numThreads];
+            var tasks = new List<Task<List<string>>>();
 
-            var urlList = new List<string>();
-
-            // start each thread to retrieve a subset of unique URLs
+            // Start each task to retrieve a subset of unique URLs
             for (var i = 0; i < numThreads; i++)
             {
-                tasks[i] = Task.Run(async () => urlList.AddRange(await GetRandomUrlsAsync(numUrlsPerThread).ConfigureAwait(false)));
+                tasks.Add(GetRandomUrlsAsync(numUrlsPerThread));
             }
 
-            // wait for all threads to complete
-            await Task.WhenAll(tasks).ConfigureAwait(false);
+            // Wait for all tasks to complete
+            var results = await Task.WhenAll(tasks).ConfigureAwait(false);
+
+            // Flatten the results from all tasks into a single list
+            var urlList = results.SelectMany(urls => urls).ToList();
 
             return urlList;
         }
+
 
         private static string GetRandomLetters()
         {
