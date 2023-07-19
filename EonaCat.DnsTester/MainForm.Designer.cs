@@ -37,7 +37,6 @@
             checkBox7 = new System.Windows.Forms.CheckBox();
             checkBox6 = new System.Windows.Forms.CheckBox();
             checkBox5 = new System.Windows.Forms.CheckBox();
-            checkBox4 = new System.Windows.Forms.CheckBox();
             checkBox3 = new System.Windows.Forms.CheckBox();
             checkBox2 = new System.Windows.Forms.CheckBox();
             checkBox1 = new System.Windows.Forms.CheckBox();
@@ -108,6 +107,7 @@
             // 
             // tabPage1
             // 
+            tabPage1.BackColor = System.Drawing.Color.LightGray;
             tabPage1.Controls.Add(panel2);
             tabPage1.Controls.Add(panel1);
             tabPage1.Location = new System.Drawing.Point(10, 58);
@@ -116,16 +116,14 @@
             tabPage1.Size = new System.Drawing.Size(2239, 1449);
             tabPage1.TabIndex = 0;
             tabPage1.Text = "Dns tester";
-            tabPage1.UseVisualStyleBackColor = true;
             // 
             // panel2
             // 
-            panel2.BackColor = System.Drawing.SystemColors.ControlLight;
+            panel2.BackColor = System.Drawing.Color.Gold;
             panel2.Controls.Add(checkBox8);
             panel2.Controls.Add(checkBox7);
             panel2.Controls.Add(checkBox6);
             panel2.Controls.Add(checkBox5);
-            panel2.Controls.Add(checkBox4);
             panel2.Controls.Add(checkBox3);
             panel2.Controls.Add(checkBox2);
             panel2.Controls.Add(checkBox1);
@@ -142,7 +140,7 @@
             checkBox8.AutoSize = true;
             checkBox8.Checked = true;
             checkBox8.CheckState = System.Windows.Forms.CheckState.Checked;
-            checkBox8.Location = new System.Drawing.Point(1301, 42);
+            checkBox8.Location = new System.Drawing.Point(1172, 38);
             checkBox8.Name = "checkBox8";
             checkBox8.Size = new System.Drawing.Size(143, 45);
             checkBox8.TabIndex = 70;
@@ -154,7 +152,7 @@
             checkBox7.AutoSize = true;
             checkBox7.Checked = true;
             checkBox7.CheckState = System.Windows.Forms.CheckState.Checked;
-            checkBox7.Location = new System.Drawing.Point(1301, 135);
+            checkBox7.Location = new System.Drawing.Point(1172, 135);
             checkBox7.Name = "checkBox7";
             checkBox7.Size = new System.Drawing.Size(150, 45);
             checkBox7.TabIndex = 69;
@@ -166,7 +164,7 @@
             checkBox6.AutoSize = true;
             checkBox6.Checked = true;
             checkBox6.CheckState = System.Windows.Forms.CheckState.Checked;
-            checkBox6.Location = new System.Drawing.Point(1109, 135);
+            checkBox6.Location = new System.Drawing.Point(959, 135);
             checkBox6.Name = "checkBox6";
             checkBox6.Size = new System.Drawing.Size(181, 45);
             checkBox6.TabIndex = 68;
@@ -178,31 +176,19 @@
             checkBox5.AutoSize = true;
             checkBox5.Checked = true;
             checkBox5.CheckState = System.Windows.Forms.CheckState.Checked;
-            checkBox5.Location = new System.Drawing.Point(824, 135);
+            checkBox5.Location = new System.Drawing.Point(659, 135);
             checkBox5.Name = "checkBox5";
             checkBox5.Size = new System.Drawing.Size(244, 45);
             checkBox5.TabIndex = 67;
             checkBox5.Text = "WolframAlpha";
             checkBox5.UseVisualStyleBackColor = true;
             // 
-            // checkBox4
-            // 
-            checkBox4.AutoSize = true;
-            checkBox4.Checked = true;
-            checkBox4.CheckState = System.Windows.Forms.CheckState.Checked;
-            checkBox4.Location = new System.Drawing.Point(654, 135);
-            checkBox4.Name = "checkBox4";
-            checkBox4.Size = new System.Drawing.Size(103, 45);
-            checkBox4.TabIndex = 66;
-            checkBox4.Text = "Ask";
-            checkBox4.UseVisualStyleBackColor = true;
-            // 
             // checkBox3
             // 
             checkBox3.AutoSize = true;
             checkBox3.Checked = true;
             checkBox3.CheckState = System.Windows.Forms.CheckState.Checked;
-            checkBox3.Location = new System.Drawing.Point(1109, 42);
+            checkBox3.Location = new System.Drawing.Point(959, 42);
             checkBox3.Name = "checkBox3";
             checkBox3.Size = new System.Drawing.Size(154, 45);
             checkBox3.TabIndex = 65;
@@ -214,7 +200,7 @@
             checkBox2.AutoSize = true;
             checkBox2.Checked = true;
             checkBox2.CheckState = System.Windows.Forms.CheckState.Checked;
-            checkBox2.Location = new System.Drawing.Point(824, 41);
+            checkBox2.Location = new System.Drawing.Point(819, 41);
             checkBox2.Name = "checkBox2";
             checkBox2.Size = new System.Drawing.Size(115, 45);
             checkBox2.TabIndex = 64;
@@ -226,7 +212,7 @@
             checkBox1.AutoSize = true;
             checkBox1.Checked = true;
             checkBox1.CheckState = System.Windows.Forms.CheckState.Checked;
-            checkBox1.Location = new System.Drawing.Point(654, 42);
+            checkBox1.Location = new System.Drawing.Point(659, 42);
             checkBox1.Name = "checkBox1";
             checkBox1.Size = new System.Drawing.Size(138, 45);
             checkBox1.TabIndex = 63;
@@ -246,6 +232,7 @@
             // 
             // StatusBox
             // 
+            StatusBox.BackColor = System.Drawing.Color.OldLace;
             StatusBox.FormattingEnabled = true;
             StatusBox.HorizontalScrollbar = true;
             StatusBox.ItemHeight = 41;
@@ -257,6 +244,7 @@
             // 
             // ResultView
             // 
+            ResultView.BackColor = System.Drawing.Color.OldLace;
             ResultView.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] { Url, DNS1DATA, DNS1Performance, DNS2DATA, DNS2Performance });
             ResultView.GridLines = true;
             ResultView.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.Nonclickable;
@@ -300,7 +288,7 @@
             // 
             // panel1
             // 
-            panel1.BackColor = System.Drawing.SystemColors.ControlLight;
+            panel1.BackColor = System.Drawing.Color.Gold;
             panel1.Controls.Add(numericUpDown2);
             panel1.Controls.Add(label2);
             panel1.Controls.Add(comboBox1);
@@ -578,6 +566,7 @@
             AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             AutoSize = true;
             AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            BackColor = System.Drawing.SystemColors.MenuHighlight;
             ClientSize = new System.Drawing.Size(2517, 1693);
             Controls.Add(tabControl1);
             Controls.Add(RunTest);
@@ -647,7 +636,6 @@
         private System.Windows.Forms.CheckBox checkBox7;
         private System.Windows.Forms.CheckBox checkBox6;
         private System.Windows.Forms.CheckBox checkBox5;
-        private System.Windows.Forms.CheckBox checkBox4;
     }
 }
 

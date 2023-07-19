@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
-using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -11,7 +10,7 @@ namespace EonaCat.DnsTester.Helpers
     class DnsHelper
     {
         public static event EventHandler<string> OnLog;
-        public static async Task<DnsResponse> SendDnsQueryPacket(string dnsId, string server, int port, byte[] queryBytes)
+        public static async Task<DnsResponse> SendDnsQueryPacketAsync(string dnsId, string server, int port, byte[] queryBytes)
         {
             // Start the clock
             var startTime = DateTime.Now.Ticks;
@@ -30,12 +29,12 @@ namespace EonaCat.DnsTester.Helpers
                 }
                 else
                 {
-                    await client.SendAsync(queryBytes, queryBytes.Length, endPoint);
-                    var responseResult = await client.ReceiveAsync();
+                    await client.SendAsync(queryBytes, queryBytes.Length, endPoint).ConfigureAwait(false);
+                    var responseResult = await client.ReceiveAsync().ConfigureAwait(false);
                     responseBytes = responseResult.Buffer;
                 }
 
-                DnsResponse response = ParseDnsResponsePacket(dnsId, startTime, server, responseBytes);
+                var response = ParseDnsResponsePacket(dnsId, startTime, server, responseBytes);
                 return response;
             }
         }
@@ -49,16 +48,16 @@ namespace EonaCat.DnsTester.Helpers
 
         public static byte[] CreateDnsQueryPacket(string domainName, DnsRecordType recordType)
         {
-            Random random = new Random();
+            var random = new Random();
 
             // DNS header
-            ushort id = (ushort)random.Next(0, 65536);
-            ushort flags = (ushort)0x0100; // recursion desired
+            var id = (ushort)random.Next(0, 65536);
+            var flags = (ushort)0x0100; // recursion desired
             ushort qdcount = 1;
             ushort ancount = 0;
             ushort nscount = 0;
             ushort arcount = 0;
-            byte[] headerBytes = new byte[]
+            var headerBytes = new byte[]
             {
                 (byte)(id >> 8), (byte)(id & 0xff),
                 (byte)(flags >> 8), (byte)(flags & 0xff),
@@ -69,28 +68,28 @@ namespace EonaCat.DnsTester.Helpers
             };
 
             // DNS question
-            string[] labels = domainName.Split('.');
-            byte[] qnameBytes = new byte[domainName.Length + 2];
-            int qnameIndex = 0;
-            foreach (string label in labels)
+            var labels = domainName.Split('.');
+            var qnameBytes = new byte[domainName.Length + 2];
+            var qnameIndex = 0;
+            foreach (var label in labels)
             {
                 qnameBytes[qnameIndex++] = (byte)label.Length;
-                foreach (char c in label)
+                foreach (var c in label)
                 {
                     qnameBytes[qnameIndex++] = (byte)c;
                 }
             }
             qnameBytes[qnameIndex++] = 0;
 
-            byte[] qtypeBytes = new byte[] { (byte)((ushort)recordType >> 8), (byte)((ushort)recordType & 0xff) };
-            byte[] qclassBytes = new byte[] { 0, 1 }; // internet class
-            byte[] questionBytes = new byte[qnameBytes.Length + qtypeBytes.Length + qclassBytes.Length];
+            var qtypeBytes = new byte[] { (byte)((ushort)recordType >> 8), (byte)((ushort)recordType & 0xff) };
+            var qclassBytes = new byte[] { 0, 1 }; // internet class
+            var questionBytes = new byte[qnameBytes.Length + qtypeBytes.Length + qclassBytes.Length];
             qnameBytes.CopyTo(questionBytes, 0);
             qtypeBytes.CopyTo(questionBytes, qnameBytes.Length);
             qclassBytes.CopyTo(questionBytes, qnameBytes.Length + qtypeBytes.Length);
 
             // Combine the header and question to form the DNS query packet
-            byte[] queryBytes = new byte[headerBytes.Length + questionBytes.Length];
+            var queryBytes = new byte[headerBytes.Length + questionBytes.Length];
             headerBytes.CopyTo(queryBytes, 0);
             questionBytes.CopyTo(queryBytes, headerBytes.Length);
 
@@ -100,15 +99,15 @@ namespace EonaCat.DnsTester.Helpers
         static DnsQuestion ParseDnsQuestionRecord(byte[] queryBytes, ref int offset)
         {
             // Parse the DNS name
-            string name = DnsNameParser.ParseName(queryBytes, ref offset);
+            var name = DnsNameParser.ParseName(queryBytes, ref offset);
             if (name == null)
             {
                 return null;
             }
 
             // Parse the DNS type and class
-            ushort type = (ushort)((queryBytes[offset] << 8) | queryBytes[offset + 1]);
-            ushort qclass = (ushort)((queryBytes[offset + 2] << 8) | queryBytes[offset + 3]);
+            var type = (ushort)((queryBytes[offset] << 8) | queryBytes[offset + 1]);
+            var qclass = (ushort)((queryBytes[offset + 2] << 8) | queryBytes[offset + 3]);
             offset += 4;
 
             return new DnsQuestion
@@ -158,28 +157,28 @@ namespace EonaCat.DnsTester.Helpers
             var offset = 0;
 
             // Parse the DNS header
-            ushort id = (ushort)((responseBytes[0] << 8) | responseBytes[1]);
-            ushort flags = (ushort)((responseBytes[2] << 8) | responseBytes[3]);
-            bool isResponse = (flags & 0x8000) != 0;
-            ushort qdcount = (ushort)((responseBytes[4] << 8) | responseBytes[5]);
-            ushort ancount = (ushort)((responseBytes[6] << 8) | responseBytes[7]);
+            var id = (ushort)((responseBytes[0] << 8) | responseBytes[1]);
+            var flags = (ushort)((responseBytes[2] << 8) | responseBytes[3]);
+            var isResponse = (flags & 0x8000) != 0;
+            var qdcount = (ushort)((responseBytes[4] << 8) | responseBytes[5]);
+            var ancount = (ushort)((responseBytes[6] << 8) | responseBytes[7]);
 
             if (!isResponse)
             {
                 throw new Exception("Invalid DNS response");
             }
 
-            ushort nscount = (ushort)((responseBytes[8] << 8) | responseBytes[9]);
-            ushort arcount = (ushort)((responseBytes[10] << 8) | responseBytes[11]);
+            var nscount = (ushort)((responseBytes[8] << 8) | responseBytes[9]);
+            var arcount = (ushort)((responseBytes[10] << 8) | responseBytes[11]);
             
             // We parsed the header set the offset past the header
             offset = 12;
 
-            List<DnsQuestion> questions = new List<DnsQuestion>();
+            var questions = new List<DnsQuestion>();
 
-            for (int i = 0; i < qdcount; i++)
+            for (var i = 0; i < qdcount; i++)
             {
-                DnsQuestion question = ParseDnsQuestionRecord(responseBytes, ref offset);
+                var question = ParseDnsQuestionRecord(responseBytes, ref offset);
                 if (question != null)
                 {
                     questions.Add(question);
@@ -187,12 +186,12 @@ namespace EonaCat.DnsTester.Helpers
             }
 
             // Parse the DNS answer records
-            List<ResourceRecord> answers = new List<ResourceRecord>();
-            for (int i = 0; i < ancount; i++)
+            var answers = new List<ResourceRecord>();
+            for (var i = 0; i < ancount; i++)
             {
                 try
                 {
-                    ResourceRecord answer = ParseDnsAnswerRecord(responseBytes, ref offset);
+                    var answer = ParseDnsAnswerRecord(responseBytes, ref offset);
                     if (answer != null)
                     {
                         answers.Add(answer);
@@ -205,12 +204,12 @@ namespace EonaCat.DnsTester.Helpers
             }
 
             // Parse the DNS authority records
-            List<ResourceRecord> authorities = new List<ResourceRecord>();
-            for (int i = 0; i < nscount; i++)
+            var authorities = new List<ResourceRecord>();
+            for (var i = 0; i < nscount; i++)
             {
                 try
                 {
-                    ResourceRecord authority = ParseDnsAnswerRecord(responseBytes, ref offset);
+                    var authority = ParseDnsAnswerRecord(responseBytes, ref offset);
                     if (authority != null)
                     {
                         authorities.Add(authority);
@@ -223,12 +222,12 @@ namespace EonaCat.DnsTester.Helpers
             }
 
             // Parse the DNS additional records
-            List<ResourceRecord> additionals = new List<ResourceRecord>();
-            for (int i = 0; i < arcount; i++)
+            var additionals = new List<ResourceRecord>();
+            for (var i = 0; i < arcount; i++)
             {
                 try
                 {
-                    ResourceRecord additional = ParseDnsAnswerRecord(responseBytes, ref offset);
+                    var additional = ParseDnsAnswerRecord(responseBytes, ref offset);
                     if (additional != null)
                     {
                         additionals.Add(additional);
@@ -258,23 +257,23 @@ namespace EonaCat.DnsTester.Helpers
         static ResourceRecord ParseDnsAnswerRecord(byte[] responseBytes, ref int offset)
         {
             // Parse the DNS name
-            string name = DnsNameParser.ExtractDomainName(responseBytes, ref offset);
+            var name = DnsNameParser.ExtractDomainName(responseBytes, ref offset);
             if (name == null)
             {
                 return null;
             }
 
             // Parse the DNS type, class, ttl, and data length
-            DnsRecordType type = (DnsRecordType)((responseBytes[offset++] << 8) + responseBytes[offset++]);
-            DnsRecordClass klass = (DnsRecordClass)((responseBytes[offset++] << 8) + responseBytes[offset++]);
-            int ttl = (responseBytes[offset++] << 24) + (responseBytes[offset++] << 16) + (responseBytes[offset++] << 8) + responseBytes[offset++];
+            var type = (DnsRecordType)((responseBytes[offset++] << 8) + responseBytes[offset++]);
+            var klass = (DnsRecordClass)((responseBytes[offset++] << 8) + responseBytes[offset++]);
+            var ttl = (responseBytes[offset++] << 24) + (responseBytes[offset++] << 16) + (responseBytes[offset++] << 8) + responseBytes[offset++];
 
             // Extract record data length
-            int dataLength = (responseBytes[offset] << 8) + responseBytes[offset + 1];
+            var dataLength = (responseBytes[offset] << 8) + responseBytes[offset + 1];
             offset += 2;
 
             // Extract record data
-            byte[] recordData = new byte[dataLength];
+            var recordData = new byte[dataLength];
             Buffer.BlockCopy(responseBytes, offset, recordData, 0, dataLength);
 
             string recordDataAsString = null;
@@ -295,9 +294,9 @@ namespace EonaCat.DnsTester.Helpers
                     recordDataAsString = DnsNameParser.ExtractDomainName(responseBytes, ref offset);
                     break;
                 case DnsRecordType.MX:
-                    int preference = (responseBytes[0] << 8) + responseBytes[1];
+                    var preference = (responseBytes[0] << 8) + responseBytes[1];
                     offset += 2;
-                    string exchange = DnsNameParser.ExtractDomainName(responseBytes, ref offset);
+                    var exchange = DnsNameParser.ExtractDomainName(responseBytes, ref offset);
                     recordDataAsString = $"{preference} {exchange}";
                     break;
                 case DnsRecordType.TXT:
@@ -320,8 +319,8 @@ namespace EonaCat.DnsTester.Helpers
 
         static string GetString(byte[] bytes, ref int index, int length)
         {
-            string str = "";
-            for (int i = 0; i < length; i++)
+            var str = "";
+            for (var i = 0; i < length; i++)
             {
                 str += (char)bytes[index++];
             }

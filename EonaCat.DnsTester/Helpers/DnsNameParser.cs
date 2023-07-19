@@ -7,7 +7,7 @@ namespace EonaCat.DnsTester.Helpers
     {
         public static string ParseName(byte[] responseBytes, ref int offset)
         {
-            List<string> labels = new List<string>();
+            var labels = new List<string>();
             int length;
 
             while ((length = responseBytes[offset++]) != 0)
@@ -15,8 +15,8 @@ namespace EonaCat.DnsTester.Helpers
                 if ((length & 0xC0) == 0xC0)
                 {
                     // The name is compressed
-                    int pointer = ((length & 0x3F) << 8) | responseBytes[offset++];
-                    int savedOffset = offset;
+                    var pointer = ((length & 0x3F) << 8) | responseBytes[offset++];
+                    var savedOffset = offset;
                     offset = pointer;
                     labels.AddRange(ParseName(responseBytes, ref offset).Split('.'));
                     offset = savedOffset;
@@ -24,7 +24,7 @@ namespace EonaCat.DnsTester.Helpers
                 }
 
                 // The name is not compressed
-                labels.Add(System.Text.Encoding.ASCII.GetString(responseBytes, offset, length));
+                labels.Add(Encoding.ASCII.GetString(responseBytes, offset, length));
                 offset += length;
             }
 
@@ -33,11 +33,11 @@ namespace EonaCat.DnsTester.Helpers
 
         public static string ExtractDomainName(byte[] buffer, ref int offset)
         {
-            List<string> labels = new List<string>();
+            var labels = new List<string>();
 
             while (true)
             {
-                byte labelLength = buffer[offset++];
+                var labelLength = buffer[offset++];
 
                 if (labelLength == 0)
                 {
@@ -47,12 +47,12 @@ namespace EonaCat.DnsTester.Helpers
                 if ((labelLength & 0xC0) == 0xC0)
                 {
                     // Compressed domain name
-                    int pointer = (int)(((labelLength & 0x3F) << 8) + buffer[offset++]);
+                    var pointer = (int)(((labelLength & 0x3F) << 8) + buffer[offset++]);
                     labels.Add(ExtractDomainName(buffer, ref pointer));
                     break;
                 }
 
-                string label = Encoding.ASCII.GetString(buffer, offset, labelLength);
+                var label = Encoding.ASCII.GetString(buffer, offset, labelLength);
                 labels.Add(label);
                 offset += labelLength;
             }

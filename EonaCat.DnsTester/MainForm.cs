@@ -43,13 +43,13 @@ namespace EonaCat.DnsTester
                 return;
             }
 
-            List<string> urls = new List<string>();
+            var urls = new List<string>();
             SetupView();
 
 
-            int numThreads = (int)numericUpDown2.Value; // number of concurrent threads to use
-            int maxUrls = (int)numericUpDown1.Value; // maximum number of unique URLs to retrieve
-            int numUrlsPerThread = maxUrls / numThreads;
+            var numThreads = (int)numericUpDown2.Value; // number of concurrent threads to use
+            var maxUrls = (int)numericUpDown1.Value; // maximum number of unique URLs to retrieve
+            var numUrlsPerThread = maxUrls / numThreads;
             if (numUrlsPerThread == 0)
             {
                 numUrlsPerThread = maxUrls;
@@ -57,11 +57,11 @@ namespace EonaCat.DnsTester
             }
 
             SetSearchEngines();
-            urls = await UrlHelper.RetrieveUrls(numThreads, numUrlsPerThread);
+            urls = await UrlHelper.RetrieveUrlsAsync(numThreads, numUrlsPerThread).ConfigureAwait(false);
             AddUrlToView(urls);
 
             IsRunning = true;
-            await Process(_recordType, urls.ToArray(), _dnsServer1, _dnsServer2);
+            await ProcessAsync(_recordType, urls.ToArray(), _dnsServer1, _dnsServer2).ConfigureAwait(false);
             IsRunning = false;
         }
 
@@ -71,7 +71,6 @@ namespace EonaCat.DnsTester
             UrlHelper.UseSearchEngineBing = checkBox2.Checked;
             UrlHelper.UseSearchEngineGoogle = checkBox3.Checked;
             UrlHelper.UseSearchEngineQwant = checkBox8.Checked;
-            UrlHelper.UseSearchEngineAsk = checkBox4.Checked;
             UrlHelper.UseSearchEngineWolfram = checkBox5.Checked;
             UrlHelper.UseSearchEngineStartPage = checkBox6.Checked;
             UrlHelper.UseSearchEngineYandex = checkBox7.Checked;
@@ -126,23 +125,26 @@ namespace EonaCat.DnsTester
 
         private void AddUrlToView(List<string> urls)
         {
-            foreach (var currentUrl in urls)
+            ResultView.Invoke(() =>
             {
-                ListViewItem listURL = new ListViewItem(currentUrl);
-                listURL.SubItems.Add(" ");
-                listURL.SubItems.Add(" ");
-                listURL.SubItems.Add(" ");
-                listURL.SubItems.Add(" ");
+                foreach (var currentUrl in urls)
+                {
+                    var listUrl = new ListViewItem(currentUrl);
+                    listUrl.SubItems.Add(" ");
+                    listUrl.SubItems.Add(" ");
+                    listUrl.SubItems.Add(" ");
+                    listUrl.SubItems.Add(" ");
 
-                ResultView.Items.Add(listURL);
-            }
+                    ResultView.Items.Add(listUrl);
+                }
 
-            if (ResultView.Items.Count > 1)
-            {
-                ResultView.EnsureVisible(ResultView.Items.Count - 1);
-            }
+                if (ResultView.Items.Count > 1)
+                {
+                    ResultView.EnsureVisible(ResultView.Items.Count - 1);
+                }
 
-            ResultView.Update();
+                ResultView.Update();
+            });
             Application.DoEvents();
         }
 
@@ -161,13 +163,13 @@ namespace EonaCat.DnsTester
             dnsList2.DisplayMember = "name";
 
             var serverList = Path.Combine(Application.StartupPath, "Servers.xml");
-            DataSet servers1 = new DataSet();
-            DataSet servers2 = new DataSet();
+            var servers1 = new DataSet();
+            var servers2 = new DataSet();
             servers1.ReadXml(serverList);
             servers2.ReadXml(serverList);
 
-            DataTable dataTable1 = servers1.Tables[0];
-            DataTable dataTable2 = servers2.Tables[0];
+            var dataTable1 = servers1.Tables[0];
+            var dataTable2 = servers2.Tables[0];
             dnsList1.DataSource = dataTable1;
             dnsList2.DataSource = dataTable2;
         }
@@ -194,46 +196,46 @@ namespace EonaCat.DnsTester
         }
 
 
-        private async Task Process(DnsRecordType recordType, string[] urls, string dnsAddress1, string dnsAddress2)
+        private async Task ProcessAsync(DnsRecordType recordType, string[] urls, string dnsAddress1, string dnsAddress2)
         {
             if (recordType == 0)
             {
                 recordType = DnsRecordType.A;
             }
 
-            int urlsTotal = urls.Length;
+            var urlsTotal = urls.Length;
             const string dnsId1 = "Dns1";
             const string dnsId2 = "Dns2";
 
             DnsHelper.OnLog -= DnsHelper_OnLog;
             DnsHelper.OnLog += DnsHelper_OnLog;
 
-            for (int i = 0; i < urlsTotal; i++)
+            for (var i = 0; i < urlsTotal; i++)
             {
                 var currentUrl = urls[i];
-                await ExecuteDns1(recordType, dnsAddress1, currentUrl, dnsId1, i);
+                await ExecuteDns1Async(recordType, dnsAddress1, currentUrl, dnsId1, i).ConfigureAwait(false);
                 if (chkDns2.Checked)
                 {
-                    await ExecuteDns2(recordType, dnsAddress2, currentUrl, dnsId2, i);
+                    await ExecuteDns2Async(recordType, dnsAddress2, currentUrl, dnsId2, i).ConfigureAwait(false);
                 }
-                await Task.Delay(100);
+                await Task.Delay(100).ConfigureAwait(false);
             }
         }
 
-        private async Task ExecuteDns2(DnsRecordType recordType, string dnsAddress2, string currentUrl, string dnsId2,
+        private async Task ExecuteDns2Async(DnsRecordType recordType, string dnsAddress2, string currentUrl, string dnsId2,
             int i)
         {
             try
             {
                 DnsResponse response2 = null;
-                byte[] queryBytes2 = DnsHelper.CreateDnsQueryPacket(currentUrl, recordType);
-                response2 = await DnsHelper.SendDnsQueryPacket(dnsId2, dnsAddress2, 53, queryBytes2);
+                var queryBytes2 = DnsHelper.CreateDnsQueryPacket(currentUrl, recordType);
+                response2 = await DnsHelper.SendDnsQueryPacketAsync(dnsId2, dnsAddress2, 53, queryBytes2).ConfigureAwait(false);
                 ProcessResponse(response2);
             }
             catch (SocketException socketException)
             {
                 SetStatus(
-                    Convert.ToString(socketException).IndexOf("time", StringComparison.Ordinal) > 0
+                    Convert.ToString(socketException)!.IndexOf("time", StringComparison.Ordinal) > 0
                         ? $"DNS1 Timeout - No response received for {Convert.ToString(DnsHelper.DnsReceiveTimeout / 1000)} seconds"
                         : Convert.ToString(socketException));
             }
@@ -244,7 +246,7 @@ namespace EonaCat.DnsTester
             }
         }
 
-        private async Task ExecuteDns1(DnsRecordType recordType, string dnsAddress1, string currentUrl, string dnsId1,
+        private async Task ExecuteDns1Async(DnsRecordType recordType, string dnsAddress1, string currentUrl, string dnsId1,
             int i)
         {
             if (chkDns1.Checked)
@@ -252,14 +254,14 @@ namespace EonaCat.DnsTester
                 try
                 {
                     DnsResponse response1 = null;
-                    byte[] queryBytes1 = DnsHelper.CreateDnsQueryPacket(currentUrl, recordType);
-                    response1 = await DnsHelper.SendDnsQueryPacket(dnsId1, dnsAddress1, 53, queryBytes1);
+                    var queryBytes1 = DnsHelper.CreateDnsQueryPacket(currentUrl, recordType);
+                    response1 = await DnsHelper.SendDnsQueryPacketAsync(dnsId1, dnsAddress1, 53, queryBytes1).ConfigureAwait(false);
                     ProcessResponse(response1);
                 }
                 catch (SocketException socketException)
                 {
                     SetStatus(
-                        Convert.ToString(socketException).IndexOf("time", StringComparison.Ordinal) > 0
+                        Convert.ToString(socketException)!.IndexOf("time", StringComparison.Ordinal) > 0
                             ? $"DNS1 Timeout - No response received for {Convert.ToString(DnsHelper.DnsReceiveTimeout / 1000)} seconds"
                             : Convert.ToString(socketException));
                 }
@@ -278,7 +280,7 @@ namespace EonaCat.DnsTester
 
         private void ProcessResponse(DnsResponse dnsResponse)
         {
-            if (dnsResponse?.Answers == null || !dnsResponse.Answers.Any())
+            if (dnsResponse == null || dnsResponse?.Answers == null || !dnsResponse.Answers.Any())
             {
                 return;
             }
@@ -295,7 +297,7 @@ namespace EonaCat.DnsTester
 
             ResultView.Invoke(() =>
             {
-                for (int i = 0; i < ResultView.Items.Count; i++)
+                for (var i = 0; i < ResultView.Items.Count; i++)
                 {
                     foreach (var answer in dnsResponse.Answers)
                     {
@@ -307,7 +309,7 @@ namespace EonaCat.DnsTester
                         {
                             case "Dns1":
                                 ResultView.Items[i].SubItems[1].Text =
-                                    Convert.ToString(answer.Data);
+                                    Convert.ToString(answer.Data) ?? string.Empty;
                                 sDeltaTime = Convert.ToString(deltaTime);
                                 ResultView.Items[i].SubItems[2].Text =
                                     sDeltaTime.Length > 5 ? sDeltaTime.Substring(0, 5) : sDeltaTime;
@@ -320,7 +322,7 @@ namespace EonaCat.DnsTester
 
                             case "Dns2":
                                 ResultView.Items[i].SubItems[3].Text =
-                                    Convert.ToString(answer.Data);
+                                    Convert.ToString(answer.Data) ?? string.Empty;
                                 sDeltaTime = Convert.ToString(deltaTime);
                                 ResultView.Items[i].SubItems[4].Text =
                                     sDeltaTime.Length > 5 ? sDeltaTime.Substring(0, 5) : sDeltaTime;
@@ -344,7 +346,7 @@ namespace EonaCat.DnsTester
                 return;
             }
 
-            if (!IPAddress.TryParse(txtResolveIP.Text, out IPAddress iPAddress))
+            if (!IPAddress.TryParse(txtResolveIP.Text, out var iPAddress))
             {
                 MessageBox.Show("Please enter a valid IP address");
                 return;
@@ -356,15 +358,15 @@ namespace EonaCat.DnsTester
                 {
                     var dnsEntry = Dns.GetHostEntry(iPAddress);
                     txtResolveHost.Invoke(() =>
-                        {
-                            txtResolveHost.Text = dnsEntry.HostName;
-                        });
+                    {
+                        txtResolveHost.Text = dnsEntry.HostName;
+                    });
                 }
                 catch (Exception)
                 {
                     MessageBox.Show($"Could not get hostname for IP address '{txtResolveIP.Text}'");
                 }
-            });
+            }).ConfigureAwait(false);
         }
 
         private async void btnResolveHost_Click(object sender, EventArgs e)
@@ -383,15 +385,15 @@ namespace EonaCat.DnsTester
                     var dnsEntry = Dns.GetHostEntry(txtResolveHost.Text);
 
                     txtResolveHost.Invoke(() =>
-                        {
-                            txtResolveIP.Text = dnsEntry.AddressList.Where(x => x.AddressFamily == AddressFamily.InterNetwork).FirstOrDefault().Address.ToString();
-                        });
+                    {
+                        txtResolveIP.Text = dnsEntry.AddressList.Where(x => x.AddressFamily == AddressFamily.InterNetwork).FirstOrDefault().Address.ToString();
+                    });
                 }
                 catch (Exception)
                 {
                     MessageBox.Show($"Could not get IP address for hostname '{txtResolveHost.Text}'");
                 }
-            });
+            }).ConfigureAwait(false);
         }
 
         private void SetStatus(string text)
